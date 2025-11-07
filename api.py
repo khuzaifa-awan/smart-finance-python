@@ -7,7 +7,6 @@ to run this code use this command:
 
 """
 
-
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
@@ -29,7 +28,7 @@ import logging
 app = FastAPI(title="AI Financial Advisor API")
 
 # Configure Gemini
-genai.configure(api_key="AIzaSyBjPhBqbTugoAp_HS8T9USfEOATS0DIGwE")
+genai.configure(api_key="AIzaSyA0BM3D7WmbJ4NiowMIob25vLi8hk4rpqo")
 gemini_model = genai.GenerativeModel("gemini-2.5-flash")
 
 # ======================
@@ -39,13 +38,26 @@ with open("savings_goal_clf.pkl", "rb") as f:
     savings_model = joblib.load(f)
 
 FEATURES = [
-    'income', 'total_expenses', 'goal_target_amount', 'months_remaining',
-    'monthly_saving_label_raw', 'expense_ratio', 'savings_rate',
-    'financial_health_score', 'total_potential_savings',
-    'suggested_monthly_plan', 'savings_is_synthetic', 'age', 'dependents',
-    'occupation', 'city_tier', 'education', 'desired_savings_percentage',
-    'potential_savings_education'
+    "income",
+    "total_expenses",
+    "goal_target_amount",
+    "months_remaining",
+    "monthly_saving_label_raw",
+    "expense_ratio",
+    "savings_rate",
+    "financial_health_score",
+    "total_potential_savings",
+    "suggested_monthly_plan",
+    "savings_is_synthetic",
+    "age",
+    "dependents",
+    "occupation",
+    "city_tier",
+    "education",
+    "desired_savings_percentage",
+    "potential_savings_education",
 ]
+
 
 # ======================
 # 3. Request Schemas
@@ -70,10 +82,12 @@ class SavingsRequest(BaseModel):
     desired_savings_percentage: float
     potential_savings_education: float
 
+
 class StockRequest(BaseModel):
     ticker: str
     start_date: date
     end_date: date
+
 
 # ======================
 # 4. Helpers
@@ -84,9 +98,11 @@ def fig_to_base64():
     buf.seek(0)
     return base64.b64encode(buf.read()).decode("utf-8")
 
+
 # ======================
 # 5. Endpoints
 # ======================
+
 
 # helper to make values JSON-safe
 def to_native(x):
@@ -104,6 +120,7 @@ def to_native(x):
         return x
     except Exception:
         return x
+
 
 @app.post("/predict_savings")
 def predict_savings(request: SavingsRequest):
@@ -136,8 +153,16 @@ def predict_savings(request: SavingsRequest):
         """
         # call_gemini should return a string. If you don't have it, use gemini_model.generate_content(...)
         try:
-            resp = gemini_model.generate_content(prompt) if gemini_model is not None else None
-            gemini_text = getattr(resp, "text", str(resp)) if resp is not None else "Gemini disabled or not configured."
+            resp = (
+                gemini_model.generate_content(prompt)
+                if gemini_model is not None
+                else None
+            )
+            gemini_text = (
+                getattr(resp, "text", str(resp))
+                if resp is not None
+                else "Gemini disabled or not configured."
+            )
         except Exception as e:
             logging.exception("Gemini call failed")
             gemini_text = f"Gemini call failed: {e}"
@@ -146,7 +171,7 @@ def predict_savings(request: SavingsRequest):
         return {
             "prediction": prediction,
             "confidence": confidence,
-            "gemini_insights": gemini_text
+            "gemini_insights": gemini_text,
         }
 
     except Exception as e:
@@ -154,12 +179,13 @@ def predict_savings(request: SavingsRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
 # ---- Stock Insights ----
 @app.post("/stock_insights")
 def stock_insights(request: StockRequest):
     try:
-        stock = yf.download(request.ticker, start=request.start_date, end=request.end_date)
+        stock = yf.download(
+            request.ticker, start=request.start_date, end=request.end_date
+        )
         if stock.empty:
             raise HTTPException(status_code=404, detail="No stock data found.")
 
@@ -226,7 +252,7 @@ def stock_insights(request: StockRequest):
         return {
             "ticker": request.ticker,
             "charts": charts,  # Base64 PNGs
-            "gemini_insights": response.text
+            "gemini_insights": response.text,
         }
 
     except Exception as e:
